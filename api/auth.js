@@ -1,9 +1,15 @@
+
 const express = require("express");
 const router = express.Router();
 
 // TODO: Import jwt and JWT_SECRET
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // TODO: createToken
+function createToken(id) {
+  return jwt.sign({ id }, JWT_SECRET, { expiresIn: "1d" });
+}
 
 const prisma = require("../prisma");
 
@@ -16,6 +22,16 @@ router.use(async (req, res, next) => {
   if (!token) return next();
 
   // TODO: Find customer with ID decrypted from the token and attach to the request
+  try {
+    const { id } = jwt.verify(token, JWT_SECRET);
+    const customer = await prisma.customer.findUniqueOrThrow({
+      where: { id },
+    });
+    req.customer = customer;
+    next();
+  } catch (e) {
+    next(e);
+  }
 });
 
 // TODO: POST /register
